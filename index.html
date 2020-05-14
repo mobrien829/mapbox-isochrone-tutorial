@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Isochrone Lunchbox Start</title>
+<title>Isochrone Lunchbox Finish</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
 <script src="https://api.mapbox.com/mapbox-gl-js/v1.10.0/mapbox-gl.js"></script>
 <link href="https://api.mapbox.com/mapbox-gl-js/v1.10.0/mapbox-gl.css" rel="stylesheet" />
@@ -19,7 +19,7 @@
 <div id="map"></div>
 
 <script>
-  mapboxgl.accessToken = 'MY_ACCESS_TOKEN';
+  mapboxgl.accessToken = 'MAPBOX_ACCESS_TOKEN';
   const transformRequest = (url) => {
     const hasQuery = url.indexOf("?") !== -1;
     const suffix = hasQuery ? "&pluginName=lunchboxIsochrones" : "?pluginName=lunchboxIsochrones";
@@ -27,10 +27,14 @@
       url: url + suffix
     }
   }
+  
+  const isoUrl = "https://api.mapbox.com/isochrone/v1/mapbox";
+  const profile = "driving";
+  const minutes = "15";
+  let coords = "-90.257765,38.627139";
 
   const pointsUrl = "https://gist.githubusercontent.com/jbranigan/f01464d691d39e59bdbf2a4e3d61d7b7/raw/e92e84fc03189830bd45802138edea2a41b4e5f6/hospitals.geojson";
   let points = {};
-  let coords = "-90.257765,38.627139";
   
   const map = new mapboxgl.Map({
       container: 'map',
@@ -47,7 +51,45 @@
 
   map.addControl(geocoder, "top-right");
 
+  const getIso = function() {
+
+    // Concatenate the request
+    let request = `${isoUrl}/${profile}/${coords}.json?contours_minutes=${minutes}&polygons=true&access_token=${mapboxgl.accessToken}`;
+
+    // Make the request, then do the things
+    fetch(request).then(res => res.json()).then(res => {
+      map.getSource("iso").setData(res);
+      
+      const selected = turf.pointsWithinPolygon(points, res);
+      map.getSource("selection").setData(selected);
+      
+      const selectionCount = selected.features.length;
+      console.log(`Number of points within ${minutes} minutes ${profile} of ${coords}: ${selectionCount}`);
+    });
+    
+  };
+
   map.on("load", () => {
+    // Add source and layer for the isochrone
+    map.addSource("iso", {
+      type: "geojson",
+      data: {
+        type: "FeatureCollection",
+        features: [
+        ]
+      }
+    });
+
+    map.addLayer({
+      "id": "isoLayer",
+      "type": "fill",
+      "source": "iso",
+      "layout": {},
+      "paint": {
+        "fill-color": "purple",
+        "fill-opacity": 0.3
+      }
+    }, "poi-label");
 
     // Add source and layer for the point data
     map.addSource("points", {
@@ -69,18 +111,40 @@
       }
     }, "poi-label");
 
+    // Add source and layer for the selected point data
+    map.addSource("selection", {
+      type: "geojson",
+      data: {
+        type: "FeatureCollection",
+        features: [
+        ]
+      }
+    });
+
+    map.addLayer({
+      "id": "selectionLayer",
+      "type": "circle",
+      "source": "selection",
+      "layout": {},
+      "paint": {
+        "circle-color": "purple",
+      }
+    });
 
     // Do this when the geocoder returns a result
     geocoder.on("result", ev => {
       coords = ev.result.geometry.coordinates.join(",");
       console.log(coords);
+      getIso();
     });
 
     // Fetch the point geojson and set it to a map layer source
     fetch(pointsUrl).then(res => res.json()).then(res => {
       points = res;
       map.getSource("points").setData(points);
-    })
+    });
+
+    getIso();
 
   });
 </script>

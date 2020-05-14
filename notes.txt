@@ -4,5 +4,12 @@ with isochrones, we can do:
 
     on-demand delivery: drivers near orders
     curbisde pickup: geofence customers
+        how close are they?
     real estate: amenities near properties
     site selection: customers near store locations
+        can find demographics near a potential location
+
+
+can use different profiles to calculate average time travelling
+
+can also use to show presence or absence of resources
