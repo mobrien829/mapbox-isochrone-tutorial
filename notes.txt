@@ -1,0 +1,8 @@
+isochrones are everything that can be reached from a place in a specific amount of time.
+
+with isochrones, we can do:
+
+    on-demand delivery: drivers near orders
+    curbisde pickup: geofence customers
+    real estate: amenities near properties
+    site selection: customers near store locations
